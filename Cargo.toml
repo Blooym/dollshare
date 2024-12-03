@@ -1,0 +1,40 @@
+[package]
+name = "dollhouse"
+description = "A safe place for sharing your media files 🎀🏠"
+repository = "https://github.com/Blooym/dollhouse"
+authors = ["Blooym"]
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+[dependencies]
+anyhow = "1.0.93"
+axum = { version = "0.7.9", features = ["http2", "macros", "multipart"] }
+axum-extra = { version = "0.9.6", features = ["typed-header"] }
+clap = { version = "4.5.21", features = ["derive", "env", "string"] }
+clap-duration = "0.1.11"
+dirs = "5.0.1"
+dotenvy = "0.15.7"
+duration-human = "0.1.10"
+infer = "0.16.0"
+serde = { version = "1.0.215", features = ["derive"] }
+sha256 = "1.5.0"
+tokio = { version = "1.41.1", features = [
+    "macros",
+    "rt-multi-thread",
+    "signal",
+    "net",
+] }
+tower-http = { version = "0.6.0", features = [
+    "catch-panic",
+    "normalize-path",
+    "timeout",
+    "trace",
+    "fs",
+] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+url = "2.5.4"
