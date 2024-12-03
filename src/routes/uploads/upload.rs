@@ -9,8 +9,10 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use blake3::Hasher;
 use infer::MatcherType;
 use serde::Serialize;
+use std::io::{self, BufReader};
 
 #[derive(Serialize)]
 pub struct CreateUploadResponse {
@@ -27,13 +29,16 @@ pub async fn create_upload_response(
     }
 
     // Get data from first multipart upload.
-    let field = multipart
-        .next_field()
-        .await
-        .context("Failed to get field")
-        .unwrap()
-        .context("Field data was None")
-        .unwrap();
+    let field = match multipart.next_field().await {
+        Ok(field) => {
+            let Some(field) = field else {
+                return Err((StatusCode::BAD_REQUEST, "Multipart field name was not set"));
+            };
+            field
+        }
+        Err(_) => return Err((StatusCode::BAD_REQUEST, "Multipart field error")),
+    };
+
     let Ok(data) = field.bytes().await else {
         return Err((
             StatusCode::PAYLOAD_TOO_LARGE,
@@ -49,19 +54,28 @@ pub async fn create_upload_response(
             "Your file was rejected because the MIME type could not be determined.",
         ));
     };
-    if state.limit_to_media {
-        if infer.matcher_type() != MatcherType::Image && infer.matcher_type() != MatcherType::Video
-        {
-            return Err((
-                StatusCode::UNSUPPORTED_MEDIA_TYPE,
-                "Your file was rejected because the MIME type is not 'image/*' or 'video/*'.",
-            ));
-        }
+    if state.limit_to_media
+        && infer.matcher_type() != MatcherType::Image
+        && infer.matcher_type() != MatcherType::Video
+    {
+        return Err((
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            "Your file was rejected because the MIME type is not 'image/*' or 'video/*'.",
+        ));
     }
 
-    // Store file by its sha256 hash to prevent duplicate uploads.
-    let id = format!("{}.{}", sha256::digest(&*data), infer.extension());
-    state.storage.store_upload(&id, &data).unwrap();
+    // Store file by its hash to prevent duplicate uploads.
+    let mut hasher = Hasher::new();
+    io::copy(&mut BufReader::new(&*data), &mut hasher)
+        .context("failed to copy file data into hasher")
+        .unwrap();
+    let file_id = format!(
+        "{}.{}",
+        &hex::encode(hasher.finalize().as_bytes())[..12],
+        infer.extension()
+    );
+
+    state.storage.store_upload(&file_id, &data).unwrap();
     Ok(Json(CreateUploadResponse {
         url: format!(
             "{}://{}/uploads/{}",
@@ -70,7 +84,7 @@ pub async fn create_upload_response(
                 state.public_url.host_str().unwrap().to_string(),
                 |f| format!("{}:{}", state.public_url.host_str().unwrap(), f)
             ),
-            id
+            file_id
         ),
     }))
 }

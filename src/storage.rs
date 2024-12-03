@@ -60,7 +60,6 @@ impl StorageHandler {
 
     pub fn store_upload(&self, filename: &str, bytes: &Bytes) -> Result<()> {
         debug!("Uploading {filename} to storage");
-
         fs::write(self.uploads_path.join(filename), bytes)?;
         Ok(())
     }
