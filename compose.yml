@@ -1,0 +1,13 @@
+services:
+  dollhouse:
+    container_name: dollhouse
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - 8731:8731
+    volumes:
+      - dollhouse-uploads:/srv/dollhouse/uploads
+
+volumes:
+  dollhouse-uploads:
