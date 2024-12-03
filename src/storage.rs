@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Debug, Clone)]
 pub struct StorageHandler {
@@ -44,7 +44,7 @@ impl StorageHandler {
                     return;
                 };
                 if self.is_upload_expired(&file_name).unwrap() {
-                    debug!("'{}' has expired - deleting from storage.", file_name);
+                    info!("'{}' has expired - deleting from storage.", file_name);
                     self.delete_upload(&file_name).unwrap();
                 }
             });
