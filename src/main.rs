@@ -80,7 +80,7 @@ struct Arguments {
         env = "DOLLHOUSE_UPLOAD_LIMIT",
         default_value_t = 50 * 1000 * 1000
     )]
-    size_limit_bytes: usize,
+    upload_limit_bytes: usize,
 
     /// Whether to enforce uploads be of either the `image/*` or `video/*` MIME type.
     ///
@@ -109,19 +109,10 @@ async fn main() -> Result<()> {
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")))
         .with_thread_ids(true)
         .init();
-
     let args = Arguments::parse();
-    let storage_handler =
-        Arc::new(StorageHandler::new(&args.uploads_path, Duration::from(&args.expiry_time)).await?);
 
-    let sh_clone = storage_handler.clone();
-    tokio::spawn(async move {
-        loop {
-            debug!("Running check to find expired files");
-            sh_clone.remove_expired_files().unwrap();
-            tokio::time::sleep(Duration::from(&args.expiry_interval)).await;
-        }
-    });
+    let storage =
+        Arc::new(StorageHandler::new(&args.uploads_path, Duration::from(&args.expiry_time)).await?);
 
     let router = Router::new()
         .route("/", get(routes::index_handler))
@@ -130,7 +121,7 @@ async fn main() -> Result<()> {
             "/api/upload",
             post(
                 routes::uploads::create_upload_response
-                    .layer(DefaultBodyLimit::max(args.size_limit_bytes)),
+                    .layer(DefaultBodyLimit::max(args.upload_limit_bytes)),
             ),
         )
         .route(
@@ -147,12 +138,23 @@ async fn main() -> Result<()> {
         .layer(CatchPanicLayer::new())
         .layer(axum_middleware::from_fn(middleware::header_middleware))
         .with_state(AppState {
-            storage: Arc::clone(&storage_handler),
+            storage: Arc::clone(&storage),
             public_url: args.public_url.clone(),
             limit_to_media: args.limit_to_media,
             token: args.token,
         });
 
+    // File expiry background task.
+    let storage_clone = Arc::clone(&storage);
+    tokio::spawn(async move {
+        loop {
+            debug!("Running check to find expired files");
+            storage_clone.remove_expired_files().unwrap();
+            tokio::time::sleep(Duration::from(&args.expiry_interval)).await;
+        }
+    });
+
+    // Start webserver.
     let tcp_listener = TcpListener::bind(args.address).await?;
     info!(
         "Internal server listening on http://{} and exposed as {}",
