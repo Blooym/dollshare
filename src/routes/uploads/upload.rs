@@ -16,6 +16,8 @@ use std::io::{self, BufReader};
 
 #[derive(Serialize)]
 pub struct CreateUploadResponse {
+    id: String,
+    mimetype: &'static str,
     url: String,
 }
 
@@ -77,6 +79,7 @@ pub async fn create_upload_response(
 
     state.storage.store_upload(&file_id, &data).unwrap();
     Ok(Json(CreateUploadResponse {
+        mimetype: infer.mime_type(),
         url: format!(
             "{}://{}/uploads/{}",
             state.public_url.scheme(),
@@ -86,5 +89,6 @@ pub async fn create_upload_response(
             ),
             file_id
         ),
+        id: file_id,
     }))
 }
