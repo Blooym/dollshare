@@ -3,7 +3,7 @@ mod middleware;
 mod routes;
 mod storage;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use axum::{
     extract::DefaultBodyLimit,
     handler::Handler,
@@ -11,6 +11,7 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
+use bytesize::ByteSize;
 use clap::Parser;
 use clap_duration::duration_range_value_parse;
 use dotenvy::dotenv;
@@ -74,13 +75,13 @@ struct Arguments {
     )]
     uploads_path: PathBuf,
 
-    /// The maximum size of file that can be uploaded in bytes.
+    /// The maximum size of file that can be uploaded.
     #[clap(
-        long = "upload-limit", 
+        long = "upload-limit",
         env = "DOLLHOUSE_UPLOAD_LIMIT",
-        default_value_t = 50 * 1000 * 1000
+        default_value = "50MB"
     )]
-    upload_limit_bytes: usize,
+    upload_limit: ByteSize,
 
     /// Whether to enforce uploads be of either the `image/*` or `video/*` MIME type.
     ///
@@ -120,12 +121,16 @@ async fn main() -> Result<()> {
         .route(
             "/api/upload",
             post(
-                routes::uploads::create_upload_response
-                    .layer(DefaultBodyLimit::max(args.upload_limit_bytes)),
+                routes::uploads::create_upload_response.layer(DefaultBodyLimit::max(
+                    args.upload_limit
+                        .0
+                        .try_into()
+                        .context("upload limit does not fit into usize")?,
+                )),
             ),
         )
         .route(
-            "/api/upload/:id",
+            "/api/upload/{id}",
             delete(routes::uploads::delete_image_handler),
         )
         .nest_service("/uploads", ServeDir::new(&args.uploads_path))

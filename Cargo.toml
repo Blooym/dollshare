@@ -14,25 +14,26 @@ codegen-units = 1
 lto = true
 
 [dependencies]
-anyhow = "1.0.93"
-axum = { version = "0.7.9", features = ["http2", "macros", "multipart"] }
-axum-extra = { version = "0.9.6", features = ["typed-header"] }
+anyhow = "1.0.95"
+axum = { version = "0.8.1", features = ["http2", "macros", "multipart"] }
+axum-extra = { version = "0.10.0", features = ["typed-header"] }
 blake3 = "1.5.5"
-clap = { version = "4.5.21", features = ["derive", "env", "string"] }
+bytesize = "1.3.0"
+clap = { version = "4.5.28", features = ["derive", "env", "string"] }
 clap-duration = "0.1.11"
-dirs = "5.0.1"
+dirs = "6.0.0"
 dotenvy = "0.15.7"
 duration-human = "0.1.10"
 hex = "0.4.3"
-infer = "0.16.0"
-serde = { version = "1.0.215", features = ["derive"] }
-tokio = { version = "1.41.1", features = [
+infer = "0.19.0"
+serde = { version = "1.0.217", features = ["derive"] }
+tokio = { version = "1.43.0", features = [
     "macros",
     "rt-multi-thread",
     "signal",
     "net",
 ] }
-tower-http = { version = "0.6.0", features = [
+tower-http = { version = "0.6.2", features = [
     "catch-panic",
     "normalize-path",
     "timeout",
