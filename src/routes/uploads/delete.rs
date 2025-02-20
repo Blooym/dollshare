@@ -1,11 +1,11 @@
-use crate::{routes::authentication_valid, AppState};
+use crate::{AppState, routes::authentication_valid};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 
 pub async fn delete_image_handler(

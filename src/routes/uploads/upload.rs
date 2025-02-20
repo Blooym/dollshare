@@ -1,13 +1,13 @@
-use crate::{routes::authentication_valid, AppState};
+use crate::{AppState, routes::authentication_valid};
 use anyhow::Context;
 use axum::{
+    Json,
     extract::{Multipart, State},
     http::StatusCode,
-    Json,
 };
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 use blake3::Hasher;
 use infer::MatcherType;
