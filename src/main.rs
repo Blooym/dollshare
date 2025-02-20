@@ -5,11 +5,11 @@ mod storage;
 
 use anyhow::{Context, Result};
 use axum::{
+    Router,
     extract::DefaultBodyLimit,
     handler::Handler,
     middleware as axum_middleware,
     routing::{delete, get, post},
-    Router,
 };
 use bytesize::ByteSize;
 use clap::Parser;
@@ -25,7 +25,7 @@ use tower_http::{
     services::ServeDir,
     trace::{self, TraceLayer},
 };
-use tracing::{debug, info, Level};
+use tracing::{Level, debug, info};
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
