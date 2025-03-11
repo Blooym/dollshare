@@ -8,66 +8,173 @@
 </head>
 
 <body>
-    <div class="introSection">
-        <h1>Dollhouse</h1>
-        <p>A safe place for sharing your media files 🎀🏠</p>
-        <p>Learn more on <a href="https://github.com/Blooym/dollhouse">GitHub</a>.</p>
-    </div>
+    <nav>
+        <div class="nav-container">
+            <div class="text">
+                <h1>🏠 Dollhouse</h1>
+                <p>A safe place for sharing your media files 🎀🏠</p>
 
-    <hr />
+            </div>
+            <div class="links">
+                <a href="Repository">Repository</a>
+            </div>
+        </div>
+    </nav>
 
-    <div class="uploadSection">
-        <h2>Upload a file</h2>
-        <form id="imageUploadForm" enctype="multipart/form-data">
-            <div class="field">
-                <label for="fileInput">File: </label>
-                <input required type="file" id="fileInput" name="file" accept="image/*, video/*" />
-            </div>
-            <div class="field">
-                <label for="token">Token: </label>
-                <input type="password" required id="token" onchange="setStoredToken()" />
-            </div>
-            <div>
-                <button>Upload and open</button>
-                <p id="error"></p>
-            </div>
-        </form>
-    </div>
+    <main class="container">
+        <section class="upload">
+            <h2>File Upload</h2>
+            <form id="imageUploadForm" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="token">Token</label>
+                    <br />
+                    <input type="password" required id="token" onchange="setStoredToken()" />
+                </div>
 
+                <div class="field">
+                    <label id="fileUpload" for="fileInput">File</label>
+                    <br />
+                    <input required type="file" id="fileInput" name="file" accept="image/*, video/*" />
+                </div>
+
+                <div>
+                    <button>Upload & Open</button>
+                    <p id="error"></p>
+                </div>
+            </form>
+        </section>
+        </div>
 </body>
 
+
 <style>
-    .introSection {
-        margin-bottom: 1rem;
+    :root {
+        --col-background: #151515;
+        --col-background-layer: #292929;
+        --col-link: white;
+        --col-link-hover: lightgrey;
+        --col-text: white;
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
     }
 
-    .introSection h1 {
-        margin-bottom: 0.3rem;
+    body {
+        background-color: var(--col-background);
+        color: var(--col-text);
     }
 
-    .introSection p {
-        margin: 0.3rem 0;
+    a {
+        color: var(--col-link);
     }
 
-    .uploadSection h2 {
-        margin-bottom: 0.3rem;
+    a:hover {
+        color: var(--col-link-hover);
     }
 
-    .uploadSection .field {
-        margin-bottom: 0.2rem;
+    nav {
+        background-color: var(--col-background-layer);
+        padding: 10px 0;
+        color: var(--col-text);
     }
 
-    .uploadSection button {
+    .nav-container {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .upload {
+        border-radius: 8px;
+        background-color: var(--col-background-layer);
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .upload button {
+        margin-top: 1rem;
         width: 200px;
-        height: 35px;
+        height: 50px;
     }
 
-    .uploadSection label {
+    .upload label {
         font-weight: bold;
     }
 
-    .uploadSection #error {
+    .upload .field {
+        margin: 1rem;
+    }
+
+    .upload .field #fileInput {
+        padding: 10px;
+        cursor: pointer;
+        background-color: #565b63;
+        border-radius: 8px;
+    }
+
+    .upload .field #fileInput:hover {
+        background-color: #474e5a;
+    }
+
+    .upload #error {
+        margin: 1rem;
         color: red;
+    }
+</style>
+
+<style>
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    * {
+        margin: 0;
+    }
+
+    body {
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    input,
+    button,
+    textarea,
+    select {
+        font: inherit;
+    }
+
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        overflow-wrap: break-word;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        text-wrap: balance;
+    }
+
+    #root,
+    #__next {
+        isolation: isolate;
     }
 </style>
 
