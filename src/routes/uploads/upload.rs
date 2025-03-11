@@ -26,7 +26,7 @@ pub async fn create_upload_response(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
 ) -> Result<Json<CreateUploadResponse>, (StatusCode, &'static str)> {
-    if !authentication_valid(authorization.token(), &state.token) {
+    if !authentication_valid(authorization.token(), &state.tokens) {
         return Err((StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.as_str()));
     }
 

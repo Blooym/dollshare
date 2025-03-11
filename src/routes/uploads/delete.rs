@@ -13,7 +13,7 @@ pub async fn delete_image_handler(
     Path(id): Path<String>,
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
 ) -> StatusCode {
-    if !authentication_valid(authorization.token(), &state.token) {
+    if !authentication_valid(authorization.token(), &state.tokens) {
         return StatusCode::UNAUTHORIZED;
     }
 
