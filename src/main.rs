@@ -51,9 +51,14 @@ struct Arguments {
     )]
     public_url: Url,
 
-    /// The bearer token to use when interacting with authenticated endpoints.
-    #[clap(long = "token", env = "DOLLHOUSE_TOKEN")]
-    token: String,
+    /// One or more bearer tokens to use when interacting with authenticated endpoints.
+    #[clap(
+        long = "tokens",
+        env = "DOLLHOUSE_TOKENS",
+        required = true,
+        value_delimiter = ','
+    )]
+    tokens: Vec<String>,
 
     /// The amount of time since last access that can elapse before a file is automatically purged from storage.
     #[clap(long = "expiry-time", env = "DOLLHOUSE_EXPIRY_TIME", default_value="31 days", value_parser = duration_range_value_parse!(min: 1min, max: 500years))]
@@ -100,7 +105,7 @@ struct AppState {
     storage: Arc<StorageHandler>,
     public_url: Url,
     limit_to_media: bool,
-    token: String,
+    tokens: Vec<String>,
 }
 
 #[tokio::main]
@@ -146,7 +151,7 @@ async fn main() -> Result<()> {
             storage: Arc::clone(&storage),
             public_url: args.public_url.clone(),
             limit_to_media: args.limit_to_media,
-            token: args.token,
+            tokens: args.tokens,
         });
 
     // File expiry background task.
