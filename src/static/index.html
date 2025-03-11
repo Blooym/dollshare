@@ -37,7 +37,7 @@
                 </div>
 
                 <div>
-                    <button>Upload & Open</button>
+                    <button id="fileUploadButton">Upload & Open</button>
                     <p id="error"></p>
                 </div>
             </form>
@@ -213,7 +213,7 @@
         localStorage.setItem("token", token);
     }
 
-    const errorEle = document.getElementById("error");
+    const errorText = document.getElementById("error");
     const imageUploadForm = document.getElementById("imageUploadForm");
 
     let token = getStoredToken();
@@ -224,37 +224,44 @@
         event.preventDefault();
         const fileInput = document.getElementById('fileInput');
         if (fileInput.files.length === 0) {
-            errorEle.innerText = "No files selected to upload.";
+            errorText.innerText = "No files selected to upload.";
             throw new Error("no files selected to upload.");
         }
+
+        const fileUploadButton = document.getElementById("fileUploadButton");
+        const oldUploadText = fileUploadButton.innerText;
+        fileUploadButton.innerText = "Processing";
+        fileUploadButton.disabled = true;
 
         const formData = new FormData();
         for (const file of fileInput.files) {
             formData.append("files", file);
         }
 
-        const res = await fetch(`${window.location.protocol}//${window.location.host}/api/upload`, {
-            method: "POST",
-            body: formData,
-            headers: {
-                "Authorization": `Bearer ${token}`,
+        try {
+            const res = await fetch(`${window.location.protocol}//${window.location.host}/api/upload`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                }
+            });
+            if (!res.ok) {
+                throw new Error(`failed to upload media: ${res.status} - ${res.statusText}`);
             }
-        });
 
-        if (!res.ok) {
-            errorEle.innerText = `Failed to upload media: ${res.status} - ${res.statusText}`;
-            throw new Error(`failed to upload media: ${res.status} - ${res.statusText}`);
+            const json = await res.json();
+            const redirectUrl = json["url"];
+            if (redirectUrl === undefined || redirectUrl === null) {
+                throw new Error("server returned malformed response object\nyour token may be invalid.");
+            }
+            window.location = json["url"];
+        } catch (e) {
+            fileUploadButton.innerText = oldUploadText;
+            fileUploadButton.disabled = false;
+            errorText.innerText = e.toString();
+            console.error(e);
         }
-
-        const json = await res.json();
-
-        const redirectUrl = json["url"];
-        if (redirectUrl === undefined || redirectUrl === null) {
-            errorEle.innerText = "Server returned malformed response object.";
-            throw new Error("server returned malformed response object.");
-        }
-
-        window.location = json["url"];
     }
 </script>
 
