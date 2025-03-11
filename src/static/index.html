@@ -13,7 +13,6 @@
             <div class="text">
                 <h1>🏠 Dollhouse</h1>
                 <p>A safe place for sharing your media files 🎀🏠</p>
-
             </div>
             <div class="links">
                 <a href="https://github.com/Blooym/dollhouse">Repository</a>
@@ -54,10 +53,14 @@
         --col-link: white;
         --col-link-hover: lightgrey;
         --col-text: white;
+        --col-input-background: #565b63;
+        --col-input-background-hover: #474e5a;
         font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
     }
 
     body {
+        height: 100%;
+        width: 100%;
         background-color: var(--col-background);
         color: var(--col-text);
     }
@@ -72,7 +75,6 @@
 
     nav {
         background-color: var(--col-background-layer);
-        padding: 10px 0;
         color: var(--col-text);
     }
 
@@ -80,18 +82,32 @@
         max-width: 900px;
         margin: 0 auto;
         display: flex;
+        padding: 5px 10px;
         align-items: center;
         justify-content: space-between;
     }
 
-    .upload {
-        border-radius: 8px;
-        background-color: var(--col-background-layer);
-        max-width: 600px;
-        margin: 2rem auto;
-        padding: 1rem;
+    @media only screen and (max-width: 480px) {
+        .nav-container .text p {
+            display: none;
+        }
+    }
+
+    .container {
         display: flex;
         flex-direction: column;
+        width: 100%;
+        max-width: 600px;
+        align-items: center;
+        padding: 0 0.4rem;
+        margin: 1rem auto;
+    }
+
+    .upload {
+        width: 100%;
+        border-radius: 8px;
+        background-color: var(--col-background-layer);
+        padding: 1rem;
         text-align: center;
     }
 
@@ -117,12 +133,12 @@
     .upload .field #fileInput {
         padding: 10px;
         cursor: pointer;
-        background-color: #565b63;
+        background-color: var(--col-input-background);
         border-radius: 8px;
     }
 
     .upload .field #fileInput:hover {
-        background-color: #474e5a;
+        background-color: var(--col-input-background-hover);
     }
 
     .upload #error {
