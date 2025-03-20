@@ -6,6 +6,16 @@ use axum::{
 };
 use serde::Deserialize;
 
+/// The response for if a file does not exist or for a decryption failure.
+///
+/// # Notes:
+/// The same response must be given for both scenarios to ensure the file is
+/// not confirmed to exist unless the end user actually has the decryption key.
+const DECRYPT_OR_NOT_FOUND_RESPONSE: (StatusCode, &str) = (
+    StatusCode::NOT_FOUND,
+    "This file could not be displayed. Either it does not exist, or your decryption key is invalid.",
+);
+
 #[derive(Deserialize)]
 pub struct GetUploadQuery {
     /// Decryption key for the upload.
@@ -17,6 +27,11 @@ pub async fn get_upload_handler(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    // Don't bother trying to decrypt if we know the file doesn't exist.
+    if !state.storage.upload_exists(&id).unwrap() {
+        return DECRYPT_OR_NOT_FOUND_RESPONSE.into_response();
+    }
+
     match state.storage.get_upload(&id, &query.key) {
         Ok(bytes) => (
             [(
@@ -28,10 +43,6 @@ pub async fn get_upload_handler(
             (bytes),
         )
             .into_response(),
-        Err(_) => (
-            StatusCode::BAD_REQUEST,
-            "This file does not exist or the decryption key is invalid.",
-        )
-            .into_response(),
+        Err(_) => DECRYPT_OR_NOT_FOUND_RESPONSE.into_response(),
     }
 }
