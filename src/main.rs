@@ -1,4 +1,4 @@
-mod elapsed;
+mod cryptography;
 mod middleware;
 mod routes;
 mod storage;
@@ -22,7 +22,6 @@ use tokio::net::TcpListener;
 use tower_http::{
     catch_panic::CatchPanicLayer,
     normalize_path::NormalizePathLayer,
-    services::ServeDir,
     trace::{self, TraceLayer},
 };
 use tracing::{Level, debug, info};
@@ -117,8 +116,10 @@ async fn main() -> Result<()> {
         .init();
     let args = Arguments::parse();
 
-    let storage =
-        Arc::new(StorageHandler::new(&args.uploads_path, Duration::from(&args.expiry_time)).await?);
+    let storage = Arc::new(StorageHandler::new(
+        &args.uploads_path,
+        Duration::from(&args.expiry_time),
+    )?);
 
     let router = Router::new()
         .route("/", get(routes::index_handler))
@@ -126,7 +127,7 @@ async fn main() -> Result<()> {
         .route(
             "/api/upload",
             post(
-                routes::uploads::create_upload_response.layer(DefaultBodyLimit::max(
+                routes::uploads::create_upload_handler.layer(DefaultBodyLimit::max(
                     args.upload_limit
                         .0
                         .try_into()
@@ -138,7 +139,7 @@ async fn main() -> Result<()> {
             "/api/upload/{id}",
             delete(routes::uploads::delete_image_handler),
         )
-        .nest_service("/uploads", ServeDir::new(&args.uploads_path))
+        .route("/uploads/{id}", get(routes::uploads::get_upload_handler))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
