@@ -13,6 +13,7 @@ use blake3::Hasher;
 use infer::MatcherType;
 use serde::Serialize;
 use std::io::{self, BufReader};
+use tracing::error;
 
 #[derive(Serialize)]
 pub struct CreateUploadResponse {
@@ -21,7 +22,7 @@ pub struct CreateUploadResponse {
     url: String,
 }
 
-pub async fn create_upload_response(
+pub async fn create_upload_handler(
     State(state): State<AppState>,
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
@@ -40,7 +41,6 @@ pub async fn create_upload_response(
         }
         Err(_) => return Err((StatusCode::BAD_REQUEST, "Multipart field error")),
     };
-
     let Ok(data) = field.bytes().await else {
         return Err((
             StatusCode::PAYLOAD_TOO_LARGE,
@@ -49,7 +49,7 @@ pub async fn create_upload_response(
     };
 
     // Infer mimetype by magic numbers and reject
-    // mimetypes that arent images or videos.
+    // uploads that are not images or videos if enabled.
     let Some(infer) = infer::get(&data) else {
         return Err((
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
@@ -66,29 +66,44 @@ pub async fn create_upload_response(
         ));
     }
 
-    // Store file by its hash to prevent duplicate uploads.
-    let mut hasher = Hasher::new();
-    io::copy(&mut BufReader::new(&*data), &mut hasher)
-        .context("failed to copy file data into hasher")
-        .unwrap();
-    let file_id = format!(
-        "{}.{}",
-        &hex::encode(hasher.finalize().as_bytes())[..12],
-        infer.extension()
-    );
+    // Store file by hash to prevent duplicating uploads.
+    //
+    // NOTE: this technically leaks the file contents regardless of
+    // encryption via hash comparsion, but that's irrelevant for
+    // this project.
+    let filename = {
+        let mut hasher = Hasher::new();
+        io::copy(&mut BufReader::new(&*data), &mut hasher)
+            .context("failed to copy file data into hasher")
+            .unwrap();
+        format!(
+            "{}.{}",
+            &hex::encode(hasher.finalize().as_bytes())[..10],
+            infer.extension()
+        )
+    };
 
-    state.storage.store_upload(&file_id, &data).unwrap();
-    Ok(Json(CreateUploadResponse {
-        mimetype: infer.mime_type(),
-        url: format!(
-            "{}://{}/uploads/{}",
-            state.public_url.scheme(),
-            state.public_url.port().map_or(
-                state.public_url.host_str().unwrap().to_string(),
-                |f| format!("{}:{}", state.public_url.host_str().unwrap(), f)
+    match state.storage.store_upload(&filename, &data) {
+        Ok(decryption_key) => Ok(Json(CreateUploadResponse {
+            mimetype: infer.mime_type(),
+            url: format!(
+                "{}://{}/uploads/{}?key={}",
+                state.public_url.scheme(),
+                state.public_url.port().map_or(
+                    state.public_url.host_str().unwrap().to_string(),
+                    |f| format!("{}:{}", state.public_url.host_str().unwrap(), f,)
+                ),
+                filename,
+                decryption_key
             ),
-            file_id
-        ),
-        id: file_id,
-    }))
+            id: filename,
+        })),
+        Err(err) => {
+            error!("Error while encrypting or writing file {filename}: {err:?}");
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Your file could not be encrypted/written to storage successfully.",
+            ))
+        }
+    }
 }
