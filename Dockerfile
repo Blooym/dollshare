@@ -3,7 +3,7 @@
 # ----------
 FROM alpine:latest AS user
 RUN adduser -S -s /bin/false -D dollhouse
-RUN mkdir /uploads
+RUN mkdir /data
 
 # -----------
 #    BUILD
@@ -35,11 +35,11 @@ COPY --from=build /build/target/release/dollhouse /usr/bin/dollhouse
 COPY --from=user /etc/passwd /etc/passwd
 COPY --from=user /bin/false /bin/false
 USER dollhouse
-COPY --from=user --chown=dollhouse /uploads /srv/dollhouse/uploads
+COPY --from=user --chown=dollhouse /data /srv/dollhouse
 
 ENV DOLLHOUSE_ADDRESS=0.0.0.0:8731
 ENV DOLLHOUSE_PUBLIC_URL=http://0.0.0.0:8731
-ENV DOLLHOUSE_UPLOADS_PATH=/srv/dollhouse/uploads
+ENV DOLLHOUSE_UPLOADS_PATH=/srv/dollhouse
 ENV RUST_LOG=info
 EXPOSE 8731
 

@@ -7,7 +7,7 @@ services:
     ports:
       - 8731:8731
     volumes:
-      - dollhouse-uploads:/srv/dollhouse/uploads
+      - dollhouse-data:/srv/dollhouse
 
 volumes:
-  dollhouse-uploads:
+  dollhouse-data:
