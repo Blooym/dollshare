@@ -17,7 +17,7 @@ lto = true
 anyhow = "1.0.97"
 axum = { version = "0.8.1", features = ["http2", "macros", "multipart"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
-blake3 = "1.7.0"
+blake3 = { version = "1.7.0", features = ["zeroize", "rayon"] }
 bytesize = "2.0.1"
 clap = { version = "4.5.32", features = ["derive", "env", "string"] }
 chacha20poly1305 = "0.10.1"
@@ -44,3 +44,4 @@ tower-http = { version = "0.6.2", features = [
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 url = "2.5.4"
+rand = "0.9.0"

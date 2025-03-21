@@ -1,5 +1,4 @@
-use crate::{AppState, routes::authentication_valid};
-use anyhow::Context;
+use crate::{AppState, cryptography::Cryptography, routes::authentication_valid};
 use axum::{
     Json,
     extract::{Multipart, State},
@@ -9,10 +8,8 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use blake3::Hasher;
 use infer::MatcherType;
 use serde::Serialize;
-use std::io::{self, BufReader};
 use tracing::error;
 
 #[derive(Serialize)]
@@ -27,7 +24,7 @@ pub async fn create_upload_handler(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
 ) -> Result<Json<CreateUploadResponse>, (StatusCode, &'static str)> {
-    if !authentication_valid(authorization.token(), &state.tokens) {
+    if !authentication_valid(authorization.token(), &state.auth_tokens) {
         return Err((StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.as_str()));
     }
 
@@ -67,31 +64,24 @@ pub async fn create_upload_handler(
     }
 
     // Store file by hash to prevent duplicating uploads.
-    //
-    // NOTE: this technically leaks the file contents regardless of
-    // encryption via hash comparsion, but that's irrelevant for
-    // this project.
-    let filename = {
-        let mut hasher = Hasher::new();
-        io::copy(&mut BufReader::new(&*data), &mut hasher)
-            .context("failed to copy file data into hasher")
-            .unwrap();
-        format!(
-            "{}.{}",
-            &hex::encode(hasher.finalize().as_bytes())[..10],
-            infer.extension()
-        )
-    };
+    let filename = format!(
+        "{}.{}",
+        Cryptography::hash_from_bytes(&data, &state.persisted_salt)
+            .unwrap()
+            .get(..10)
+            .unwrap(),
+        infer.extension()
+    );
 
     match state.storage.store_upload(&filename, &data) {
         Ok(decryption_key) => Ok(Json(CreateUploadResponse {
             mimetype: infer.mime_type(),
             url: format!(
                 "{}://{}/uploads/{}?key={}",
-                state.public_url.scheme(),
-                state.public_url.port().map_or(
-                    state.public_url.host_str().unwrap().to_string(),
-                    |f| format!("{}:{}", state.public_url.host_str().unwrap(), f,)
+                state.public_base_url.scheme(),
+                state.public_base_url.port().map_or(
+                    state.public_base_url.host_str().unwrap().to_string(),
+                    |f| format!("{}:{}", state.public_base_url.host_str().unwrap(), f,)
                 ),
                 filename,
                 decryption_key
