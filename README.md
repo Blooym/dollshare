@@ -15,13 +15,13 @@ A safe, encrypted & privacy-focused place to share files 🎀🏠
 
 - **Storage-efficient**: Files are deduplicated by writing them to disk as `<hash>.<ext>` which helps to minimise storage usage.
 
-- **Encrypted at rest**: Files are encrypted on upload via a fully randomized encryption key generated on upload and attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
+- **Encrypted at rest**: Files are encrypted on upload via a fully randomized encryption key attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
   * Note: due to files being named by unencrypted hash the content can be inferred if the hash is known. I currently think this is fine. 
 
 - **Multi-user**: Authorization tokens can be provided by the server operator to trusted individuals to allow them to upload their own content privately.
    * Note: due to files being named by unencrypted hash the encryption key of a file could be rotated by another user on accident. This will eventually be fixed by appending a user ID to file names and doing deduplication on a per-user level.
 
-- **Configurable and simple to host**: Running the server should be as easy pulling the docker container or building the binary, changing a few configuration options, and starting the server.
+- **Configurable and simple to host**: Running the server should be as easy as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
 
 ## Setup
 
