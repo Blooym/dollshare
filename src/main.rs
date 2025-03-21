@@ -14,6 +14,7 @@ use axum::{
 use bytesize::ByteSize;
 use clap::Parser;
 use clap_duration::duration_range_value_parse;
+use cryptography::Cryptography;
 use dotenvy::dotenv;
 use duration_human::{DurationHuman, DurationHumanValidator};
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
@@ -28,10 +29,13 @@ use tracing::{Level, debug, info};
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
+const UPLOADS_DIRNAME: &str = "uploads";
+const PERSISTED_SALT_FILENAME: &str = "persisted_salt";
+
 #[derive(Debug, Clone, Parser)]
 #[clap(author, about, version)]
 struct Arguments {
-    /// The socket address that the server should be exposed on.
+    /// The internet socket address that the server should be ran on.
     #[arg(
         long = "address",
         env = "DOLLHOUSE_ADDRESS",
@@ -39,10 +43,9 @@ struct Arguments {
     )]
     address: SocketAddr,
 
-    /// The public url that this server will be exposed as to the internet.
+    /// The base url to use when generating links to uploads.
     ///
-    /// This only impacts what base is used when links are sent to users.
-    /// You'll need to handle the reverse proxy yourself.
+    /// This is only for link generation, you'll need to handle the reverse proxy yourself.
     #[arg(
         long = "public-url",
         env = "DOLLHOUSE_PUBLIC_URL",
@@ -59,27 +62,27 @@ struct Arguments {
     )]
     tokens: Vec<String>,
 
-    /// The amount of time since last access that can elapse before a file is automatically purged from storage.
-    #[clap(long = "expiry-time", env = "DOLLHOUSE_EXPIRY_TIME", default_value="31 days", value_parser = duration_range_value_parse!(min: 1min, max: 500years))]
+    /// The amount of time since last access before a file is automatically purged from storage.
+    #[clap(long = "expiry-time", env = "DOLLHOUSE_EXPIRY_TIME", default_value="31 days", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
     expiry_time: DurationHuman,
 
     /// The interval to run the expiry check on.
     ///
     /// This may be an intensive operation if you store thousands of files with long expiry times.
-    #[clap(long = "expiry-interval", env = "DOLLHOUSE_EXPIRY_INTERVAL", default_value="60 min", value_parser = duration_range_value_parse!(min: 1min, max: 1day))]
+    #[clap(long = "expiry-interval", env = "DOLLHOUSE_EXPIRY_INTERVAL", default_value="60 min", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
     expiry_interval: DurationHuman,
 
-    /// Where all uploads should be stored locally.
+    /// A path to the directory where data should be stored.
     ///
-    /// This directory should ONLY contain uploads as it is automatically purged and exposed to the internet.
+    /// CAUTION: This directory should not be used for anything else as it and all subdirectories will be automatically managed.
     #[clap(
-        long = "uploads-path", 
-        env = "DOLLHOUSE_UPLOADS_PATH",
-        default_value = dirs::data_local_dir().unwrap().join("dollhouse").join("uploads").into_os_string()
+        long = "data-path", 
+        env = "DOLLHOUSE_DATA_PATH",
+        default_value = dirs::data_local_dir().unwrap().join("dollhouse").into_os_string()
     )]
-    uploads_path: PathBuf,
+    data_path: PathBuf,
 
-    /// The maximum size of file that can be uploaded.
+    /// The maximum allowed filesize for all uploads.
     #[clap(
         long = "upload-limit",
         env = "DOLLHOUSE_UPLOAD_LIMIT",
@@ -87,10 +90,9 @@ struct Arguments {
     )]
     upload_limit: ByteSize,
 
-    /// Whether to enforce uploads be of either the `image/*` or `video/*` MIME type.
+    /// Enforce uploads be of either the `image/*` or `video/*` MIME type.
     ///
-    /// MIME types are determined by the magic numbers of uploaded content.
-    /// This process is not perfect but will fail-closed on unknown media types.
+    //  MIME types are determined by the magic numbers of uploaded content, if the mimetype cannot be determined the file will be rejected.
     #[clap(
         long = "limit-to-media",
         env = "DOLLHOUSE_LIMIT_TO_MEDIA",
@@ -102,9 +104,14 @@ struct Arguments {
 #[derive(Debug, Clone)]
 struct AppState {
     storage: Arc<StorageHandler>,
-    public_url: Url,
+    /// Base URL for use when returning public facing links.
+    public_base_url: Url,
+    /// Reject files that are not of image/* or video/* types.
     limit_to_media: bool,
-    tokens: Vec<String>,
+    /// Collection of bearer tokens for actions that require authentication.
+    auth_tokens: Vec<String>,
+    /// Used for all hash operations to avoid rainbow tables.
+    persisted_salt: String,
 }
 
 #[tokio::main]
@@ -112,14 +119,22 @@ async fn main() -> Result<()> {
     dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")))
-        .with_thread_ids(true)
         .init();
     let args = Arguments::parse();
 
+    // Init required state.
     let storage = Arc::new(StorageHandler::new(
-        &args.uploads_path,
+        &args.data_path.join(UPLOADS_DIRNAME),
         Duration::from(&args.expiry_time),
     )?);
+    let persisted_salt = {
+        let path = args.data_path.join(PERSISTED_SALT_FILENAME);
+        if let Some(salt) = Cryptography::get_persisted_salt(&path)? {
+            salt
+        } else {
+            Cryptography::create_persisted_salt(&path)?
+        }
+    };
 
     let router = Router::new()
         .route("/", get(routes::index_handler))
@@ -150,9 +165,10 @@ async fn main() -> Result<()> {
         .layer(axum_middleware::from_fn(middleware::header_middleware))
         .with_state(AppState {
             storage: Arc::clone(&storage),
-            public_url: args.public_url.clone(),
+            public_base_url: args.public_url.clone(),
             limit_to_media: args.limit_to_media,
-            tokens: args.tokens,
+            auth_tokens: args.tokens,
+            persisted_salt: persisted_salt,
         });
 
     // File expiry background task.
