@@ -13,7 +13,7 @@ A safe, encrypted & privacy-focused place to share files 🎀🏠
 
 - **Ephemeral-first**: Files are treated as temporary and will be automatically deleted based on a configurable time since last access.
 
-- **Storage-efficient**: Files are deduplicated by writing them to disk as `<hash>.<ext>` which helps to minimise storage usage. Hashes are salted with a value generated at first statup which is then stored on disk.
+- **Storage-efficient**: Files are deduplicated by writing them to disk as `<hash>.<ext>` which helps to minimise storage usage. Hashes are salted with a value generated at first startup which is then stored on disk.
 
 - **Encrypted at rest**: Files are encrypted on upload via a fully randomized encryption key attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
 
