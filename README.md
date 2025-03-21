@@ -44,11 +44,9 @@ docker compose up -d
 cargo install --git https://github.com/Blooym/dollhouse.git
 ```
 
-3. Copy `.env.example` to `.env` and fill in the values as necessary.
+3. Set configuration values as necessary.
    Information about configuration options can be found in the
    [configuration](#configuration) section.
-
-4. Run the project from the same directory as `.env`
 
 ```
 dollhouse
