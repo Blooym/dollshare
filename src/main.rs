@@ -19,7 +19,7 @@ use dotenvy::dotenv;
 use duration_human::{DurationHuman, DurationHumanValidator};
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 use storage::StorageHandler;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, signal};
 use tower_http::{
     catch_panic::CatchPanicLayer,
     normalize_path::NormalizePathLayer,
@@ -181,19 +181,39 @@ async fn main() -> Result<()> {
         }
     });
 
-    // Start webserver.
     let tcp_listener = TcpListener::bind(args.address).await?;
     info!(
         "Internal server listening on http://{} and exposed as {}",
         args.address, args.public_url
     );
     axum::serve(tcp_listener, router)
-        .with_graceful_shutdown(async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen for ctrl-c");
-        })
+        .with_graceful_shutdown(shutdown_signal())
         .await?;
 
     Ok(())
+}
+
+// https://github.com/tokio-rs/axum/blob/15917c6dbcb4a48707a20e9cfd021992a279a662/examples/graceful-shutdown/src/main.rs#L55
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
