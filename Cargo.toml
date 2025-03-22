@@ -1,6 +1,6 @@
 [package]
 name = "dollhouse"
-description = "A safe, encrypted & privacy-focused place to share file links"
+description = "A safe & encrypted place to share files"
 repository = "https://github.com/Blooym/dollhouse"
 authors = ["Blooym"]
 version = "0.1.0"

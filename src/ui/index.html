@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dollhouse</title>
+</head>
+
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="text">
+                <h1>🎀 Dollhouse</h1>
+                <p>A safe & encrypted place to share files</p>
+            </div>
+            <div class="links">
+                <a href="https://github.com/Blooym/dollhouse">Repository</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="upload">
+            <h2>File Upload</h2>
+            <form id="imageUploadForm" enctype="multipart/form-data">
+                <div class="field">
+                    <label for="token">Token</label>
+                    <br />
+                    <input type="password" required id="token" onchange="setStoredToken()" />
+                </div>
+
+                <div class="field">
+                    <label id="fileUpload" for="fileInput">File</label>
+                    <br />
+                    <input required type="file" id="fileInput" name="file" accept="image/*, video/*" />
+                </div>
+
+                <div>
+                    <button id="fileUploadButton">Upload & Open</button>
+                    <p id="error"></p>
+                </div>
+            </form>
+        </section>
+        </div>
+</body>
+
+
+<style>
+    :root {
+        --col-background: #151515;
+        --col-background-layer: #292929;
+        --col-link: white;
+        --col-link-hover: lightgrey;
+        --col-text: white;
+        --col-input-background: #565b63;
+        --col-input-background-hover: #474e5a;
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
+    }
+
+    body {
+        height: 100%;
+        width: 100%;
+        background-color: var(--col-background);
+        color: var(--col-text);
+    }
+
+    a {
+        color: var(--col-link);
+    }
+
+    a:hover {
+        color: var(--col-link-hover);
+    }
+
+    nav {
+        background-color: var(--col-background-layer);
+        color: var(--col-text);
+    }
+
+    .nav-container {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        padding: 5px 10px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    @media only screen and (max-width: 480px) {
+        .nav-container .text p {
+            display: none;
+        }
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 600px;
+        align-items: center;
+        padding: 0 0.4rem;
+        margin: 1rem auto;
+    }
+
+    .upload {
+        width: 100%;
+        border-radius: 8px;
+        background-color: var(--col-background-layer);
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .upload button {
+        margin-top: 1rem;
+        width: 200px;
+        height: 50px;
+    }
+
+    .upload label {
+        font-weight: bold;
+    }
+
+    .upload .field {
+        margin: 1rem;
+    }
+
+    .upload .field input {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .upload .field #fileInput {
+        padding: 10px;
+        cursor: pointer;
+        background-color: var(--col-input-background);
+        border-radius: 8px;
+    }
+
+    .upload .field #fileInput:hover {
+        background-color: var(--col-input-background-hover);
+    }
+
+    .upload #error {
+        margin: 1rem;
+        color: red;
+    }
+</style>
+
+<style>
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    * {
+        margin: 0;
+    }
+
+    body {
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    input,
+    button,
+    textarea,
+    select {
+        font: inherit;
+    }
+
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        overflow-wrap: break-word;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        text-wrap: balance;
+    }
+
+    #root,
+    #__next {
+        isolation: isolate;
+    }
+</style>
+
+<script>
+    function getTokenInput() {
+        return document.getElementById("token");
+    }
+
+    function getStoredToken() {
+        return localStorage.getItem("token");
+    }
+
+    function setStoredToken() {
+        token = getTokenInput().value;
+        localStorage.setItem("token", token);
+    }
+
+    const errorText = document.getElementById("error");
+    const imageUploadForm = document.getElementById("imageUploadForm");
+
+    let token = getStoredToken();
+    getTokenInput().value = token;
+    imageUploadForm.addEventListener("submit", uploadFile);
+
+    async function uploadFile() {
+        event.preventDefault();
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+            errorText.innerText = "No files selected to upload.";
+            throw new Error("no files selected to upload.");
+        }
+
+        const fileUploadButton = document.getElementById("fileUploadButton");
+        const oldUploadText = fileUploadButton.innerText;
+        fileUploadButton.innerText = "Processing";
+        fileUploadButton.disabled = true;
+
+        const formData = new FormData();
+        for (const file of fileInput.files) {
+            formData.append("files", file);
+        }
+
+        try {
+            const res = await fetch(`${window.location.protocol}//${window.location.host}/api/upload`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                }
+            });
+            if (!res.ok) {
+                throw new Error(`failed to upload media: ${res.status} - ${res.statusText}`);
+            }
+
+            const json = await res.json();
+            const redirectUrl = json["url"];
+            if (redirectUrl === undefined || redirectUrl === null) {
+                throw new Error("server returned malformed response object\nyour token may be invalid.");
+            }
+            window.location = json["url"];
+        } catch (e) {
+            fileUploadButton.innerText = oldUploadText;
+            fileUploadButton.disabled = false;
+            errorText.innerText = e.toString();
+            console.error(e);
+        }
+    }
+</script>
+
+</html>
