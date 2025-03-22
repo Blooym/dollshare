@@ -1,8 +1,36 @@
 #!/bin/sh
+# --------
+# Make sure these are set.
+DOLLHOUSE_TOKEN=
+DOLLHOUSE_BASE_URL=
+# --------
 set -e
 
-flameshot gui -r > /tmp/screenshot.png;if [ ! -s /tmp/screenshot.png ]; then
+# Ensure env is set.
+if [ -z "$DOLLHOUSE_TOKEN" ]; then 
+  echo "DOLLHOUSE_TOKEN is not set."
+  exit 1
+fi
+if [ -z "$DOLLHOUSE_BASE_URL" ]; then 
+  echo "DOLLHOUSE_BASE_URL is not set."
   exit 1
 fi
 
-curl -H "Authorization: Bearer <TOKEN_HERE>" https://<API_URL_HERE>/api/upload -F file="@/tmp/screenshot.png" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;
+require_dependency() {
+  if ! type $1 &> /dev/null; then
+    echo "Missing dependency: $1 must be installed for this script to work"
+    exit 1
+  fi
+}
+require_dependency wl-copy
+require_dependency curl
+require_dependency flameshot
+
+screenshot_dir=/tmp/dollhouse-flameshot
+file="$screenshot_dir/$(date '+%h_%Y_%d_%I_%m_%S.png')";
+mkdir -p $screenshot_dir
+flameshot gui -r > $file; if [ ! -s $file ]; then
+  exit 1;
+fi
+
+curl -H "Authorization: Bearer $DOLLHOUSE_TOKEN" $DOLLHOUSE_BASE_URL/api/upload -F file="@$file" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;

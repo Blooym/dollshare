@@ -7,7 +7,7 @@
 >
 > No support will be offered for this software, and breaking changes to functionalty or features may be made any time.
 
-A safe, encrypted & privacy-focused place to share files 🎀🏠
+A safe & encrypted place to share files. 🎀
 
 ## Features
 

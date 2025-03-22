@@ -14,9 +14,10 @@ use tracing::error;
 
 #[derive(Serialize)]
 pub struct CreateUploadResponse {
-    id: String,
-    mimetype: &'static str,
     url: String,
+    id: String,
+    key: String,
+    mimetype: &'static str,
 }
 
 pub async fn create_upload_handler(
@@ -86,6 +87,7 @@ pub async fn create_upload_handler(
                 filename,
                 decryption_key
             ),
+            key: decryption_key,
             id: filename,
         })),
         Err(err) => {
