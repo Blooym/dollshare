@@ -256,6 +256,8 @@
                 throw new Error("server returned malformed response object\nyour token may be invalid.");
             }
             window.location = json["url"];
+            fileUploadButton.innerText = oldUploadText;
+            fileUploadButton.disabled = false;
         } catch (e) {
             fileUploadButton.innerText = oldUploadText;
             fileUploadButton.disabled = false;
