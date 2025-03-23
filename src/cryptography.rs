@@ -1,5 +1,4 @@
 use std::{fs, path::PathBuf};
-
 use anyhow::{Result, bail};
 use blake3::Hasher;
 use chacha20poly1305::{
