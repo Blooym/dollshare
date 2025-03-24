@@ -1,5 +1,6 @@
 mod cryptography;
 mod middleware;
+mod mime;
 mod routes;
 mod storage;
 
@@ -17,7 +18,8 @@ use clap_duration::duration_range_value_parse;
 use cryptography::Cryptography;
 use dotenvy::dotenv;
 use duration_human::{DurationHuman, DurationHumanValidator};
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+use mime_guess::{Mime, mime::IMAGE_STAR};
+use std::{net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 use storage::StorageHandler;
 use tokio::{net::TcpListener, signal};
 use tower_http::{
@@ -62,16 +64,6 @@ struct Arguments {
     )]
     tokens: Vec<String>,
 
-    /// The amount of time since last access before a file is automatically purged from storage.
-    #[clap(long = "expiry-time", env = "DOLLHOUSE_EXPIRY_TIME", default_value="31 days", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
-    expiry_time: DurationHuman,
-
-    /// The interval to run the expiry check on.
-    ///
-    /// This may be an intensive operation if you store thousands of files with long expiry times.
-    #[clap(long = "expiry-interval", env = "DOLLHOUSE_EXPIRY_INTERVAL", default_value="60 min", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
-    expiry_interval: DurationHuman,
-
     /// A path to the directory where data should be stored.
     ///
     /// CAUTION: This directory should not be used for anything else as it and all subdirectories will be automatically managed.
@@ -82,23 +74,38 @@ struct Arguments {
     )]
     data_path: PathBuf,
 
-    /// The maximum allowed filesize for all uploads.
+    /// The amount of time since last access before a file is automatically purged from storage.
+    #[clap(long = "upload-expiry-time", env = "DOLLHOUSE_UPLOAD_EXPIRY_TIME", default_value="31 days", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
+    upload_expiry_time: DurationHuman,
+
+    /// The interval to run the expiry check on.
+    ///
+    /// This may be an intensive operation if you store thousands of files with long expiry times.
+    #[clap(long = "upload-expiry-interval", env = "DOLLHOUSE_UPLOAD_EXPIRY_INTERVAL", default_value="60 min", value_parser = duration_range_value_parse!(min: 1min, max: 100years))]
+    upload_expiry_interval: DurationHuman,
+
+    /// The maximum file size that is allowed to be uploaded.
     #[clap(
-        long = "upload-limit",
-        env = "DOLLHOUSE_UPLOAD_LIMIT",
+        long = "upload-size-limit",
+        env = "DOLLHOUSE_UPLOAD_SIZE_LIMIT",
         default_value = "50MB"
     )]
-    upload_limit: ByteSize,
+    upload_size_limit: ByteSize,
 
-    /// Enforce uploads be of either the `image/*` or `video/*` MIME type.
+    /// File mimetypes that are allowed to be uploaded.
+    /// Supports type wildcards (e.g. 'image/*', '*/*').
     ///
-    //  MIME types are determined by the magic numbers of uploaded content, if the mimetype cannot be determined the file will be rejected.
+    /// MIME types are determined by the magic numbers of uploaded content, if the mimetype cannot be determined the file will be rejected.
     #[clap(
-        long = "limit-to-media",
-        env = "DOLLHOUSE_LIMIT_TO_MEDIA",
-        default_value_t = true
+        long = "upload-mimetypes",
+        env = "DOLLHOUSE_UPLOAD_MIMETYPES",
+        default_values_t = [
+            IMAGE_STAR,
+            Mime::from_str("video/*").unwrap()
+        ],
+        value_delimiter = ','
     )]
-    limit_to_media: std::primitive::bool,
+    upload_mimetypes: Vec<Mime>,
 }
 
 #[derive(Debug, Clone)]
@@ -106,8 +113,9 @@ struct AppState {
     storage: Arc<StorageHandler>,
     /// Base URL for use when returning public facing links.
     public_base_url: Url,
-    /// Reject files that are not of image/* or video/* types.
-    limit_to_media: bool,
+    /// File mimetypes that are allowed to be uploaded.
+    /// Supports type wildcards (e.g. 'image/*', '*/*').
+    upload_allowed_mimetypes: Vec<Mime>,
     /// Collection of bearer tokens for actions that require authentication.
     auth_tokens: Vec<String>,
     /// Used for all hash operations to avoid rainbow tables.
@@ -125,7 +133,7 @@ async fn main() -> Result<()> {
     // Init required state.
     let storage = Arc::new(StorageHandler::new(
         &args.data_path.join(UPLOADS_DIRNAME),
-        Duration::from(&args.expiry_time),
+        Duration::from(&args.upload_expiry_time),
     )?);
     let persisted_salt = {
         let path = args.data_path.join(PERSISTED_SALT_FILENAME);
@@ -143,7 +151,7 @@ async fn main() -> Result<()> {
             "/api/upload",
             post(
                 routes::uploads::create_upload_handler.layer(DefaultBodyLimit::max(
-                    args.upload_limit
+                    args.upload_size_limit
                         .0
                         .try_into()
                         .context("upload limit does not fit into usize")?,
@@ -166,7 +174,7 @@ async fn main() -> Result<()> {
         .with_state(AppState {
             storage: Arc::clone(&storage),
             public_base_url: args.public_url.clone(),
-            limit_to_media: args.limit_to_media,
+            upload_allowed_mimetypes: args.upload_mimetypes,
             auth_tokens: args.tokens,
             persisted_salt: persisted_salt,
         });
@@ -177,7 +185,7 @@ async fn main() -> Result<()> {
         loop {
             debug!("Running check to find expired files");
             storage_clone.remove_expired_files().unwrap();
-            tokio::time::sleep(Duration::from(&args.expiry_interval)).await;
+            tokio::time::sleep(Duration::from(&args.upload_expiry_interval)).await;
         }
     });
 
