@@ -1,0 +1,148 @@
+:root {
+    --col-background: #151515;
+    --col-background-layer: #292929;
+    --col-link: white;
+    --col-link-hover: lightgrey;
+    --col-text: white;
+    --col-input-background: #565b63;
+    --col-input-background-hover: #474e5a;
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+    background-color: var(--col-background);
+    color: var(--col-text);
+}
+
+a {
+    color: var(--col-link);
+}
+
+a:hover {
+    color: var(--col-link-hover);
+}
+
+nav {
+    background-color: var(--col-background-layer);
+    color: var(--col-text);
+}
+
+.nav-container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    padding: 5px 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@media only screen and (max-width: 480px) {
+    .nav-container .text p {
+        display: none;
+    }
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px;
+    align-items: center;
+    padding: 0 0.4rem;
+    margin: 1rem auto;
+}
+
+.upload {
+    width: 100%;
+    border-radius: 8px;
+    background-color: var(--col-background-layer);
+    padding: 1rem;
+    text-align: center;
+}
+
+.upload button {
+    margin-top: 1rem;
+    width: 200px;
+    height: 50px;
+}
+
+.upload label {
+    font-weight: bold;
+}
+
+.upload .field {
+    margin: 1rem;
+}
+
+.upload .field input {
+    width: 100%;
+    max-width: 320px;
+}
+
+.upload .field #fileInput {
+    padding: 10px;
+    cursor: pointer;
+    background-color: var(--col-input-background);
+    border-radius: 8px;
+}
+
+.upload .field #fileInput:hover {
+    background-color: var(--col-input-background-hover);
+}
+
+.upload #error {
+    margin: 1rem;
+    color: red;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+}
+
+body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+input,
+button,
+textarea,
+select {
+    font: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    overflow-wrap: break-word;
+}
+
+p {
+    text-wrap: pretty;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    text-wrap: balance;
+}
+
+#root,
+#__next {
+    isolation: isolate;
+}
