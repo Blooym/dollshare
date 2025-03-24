@@ -1,4 +1,4 @@
-use crate::{AppState, cryptography::Cryptography, routes::authentication_valid};
+use crate::{AppState, cryptography::Cryptography, mime, routes::authentication_valid};
 use axum::{
     Json,
     extract::{Multipart, State},
@@ -8,8 +8,9 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use infer::MatcherType;
+use mime_guess::Mime;
 use serde::Serialize;
+use std::str::FromStr;
 use tracing::error;
 
 #[derive(Serialize)]
@@ -54,13 +55,13 @@ pub async fn create_upload_handler(
             "Your file was rejected because the MIME type could not be determined.",
         ));
     };
-    if state.limit_to_media
-        && infer.matcher_type() != MatcherType::Image
-        && infer.matcher_type() != MatcherType::Video
-    {
+    if !mime::is_mime_allowed(
+        &Mime::from_str(infer.mime_type()).unwrap(),
+        &state.upload_allowed_mimetypes,
+    ) {
         return Err((
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            "Your file was rejected because the MIME type is not 'image/*' or 'video/*'.",
+            "Your file was rejected because uploading file of this type is not permitted.",
         ));
     }
 
