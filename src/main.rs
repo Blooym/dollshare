@@ -146,6 +146,9 @@ async fn main() -> Result<()> {
 
     let router = Router::new()
         .route("/", get(routes::index_handler))
+        .route("/index.css", get(routes::index_css_handler))
+        .route("/index.js", get(routes::index_js_handler))
+        .route("/favicon.ico", get(routes::favicon_handler))
         .route("/health", get(routes::health_handler))
         .route(
             "/api/upload",
