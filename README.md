@@ -17,7 +17,7 @@ A safe & encrypted place to share files. 🎀
 
 - **Encrypted at rest**: Files are encrypted on upload via a fully randomized encryption key attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
 
-- **Configurable and simple to host**: Running the server be as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
+- **Configurable and simple to host**: Running the server should be as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
 
 ## Setup
 
