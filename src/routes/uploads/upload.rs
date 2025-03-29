@@ -1,4 +1,4 @@
-use crate::{AppState, cryptography::Cryptography, mime, routes::authentication_valid};
+use crate::{AppState, cryptography::Cryptography, mime};
 use axum::{
     Json,
     extract::{Multipart, State},
@@ -26,7 +26,7 @@ pub async fn create_upload_handler(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
 ) -> Result<Json<CreateUploadResponse>, (StatusCode, &'static str)> {
-    if !authentication_valid(authorization.token(), &state.auth_tokens) {
+    if !state.auth.state_for_token(authorization.token()).is_valid() {
         return Err((StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.as_str()));
     }
 
@@ -75,11 +75,11 @@ pub async fn create_upload_handler(
         infer.extension()
     );
 
-    match state.storage.store_upload(&filename, &data) {
+    match state.storage.save_file(&filename, &data) {
         Ok(decryption_key) => Ok(Json(CreateUploadResponse {
             mimetype: infer.mime_type(),
             url: format!(
-                "{}://{}/uploads/{}?key={}",
+                "{}://{}/upload/{}?key={}",
                 state.public_base_url.scheme(),
                 state.public_base_url.port().map_or(
                     state.public_base_url.host_str().unwrap().to_string(),

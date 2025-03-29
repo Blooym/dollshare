@@ -15,10 +15,13 @@ const errorText = document.getElementById("error");
 const imageUploadForm = document.getElementById("imageUploadForm");
 
 let token = getStoredToken();
-getTokenInput().value = token;
+if (token) {
+    getTokenInput().value = token;
+}
 imageUploadForm.addEventListener("submit", uploadFile);
 
-async function uploadFile() {
+// File upload handler.
+async function uploadFile(event) {
     event.preventDefault();
     const fileInput = document.getElementById('fileInput');
     if (fileInput.files.length === 0) {
@@ -37,7 +40,7 @@ async function uploadFile() {
     }
 
     try {
-        const res = await fetch(`${window.location.protocol}//${window.location.host}/api/upload`, {
+        const res = await fetch(`${window.location.protocol}//${window.location.host}/upload`, {
             method: "POST",
             body: formData,
             headers: {

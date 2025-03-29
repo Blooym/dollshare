@@ -15,7 +15,7 @@ A safe & encrypted place to share files. 🎀
 
 - **Storage-efficient**: Files are deduplicated by writing them to disk as `<hash>.<ext>` which helps to minimise storage usage. Hashes are salted with a value generated at first startup which is then stored on disk.
 
-- **Encrypted at rest**: Files are encrypted on upload via a fully randomized encryption key attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
+- **Encrypted at rest**: Files are encrypted on-server during upload and a key is attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
 
 - **Configurable and simple to host**: Running the server should be as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
 

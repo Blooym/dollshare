@@ -28,11 +28,11 @@ pub async fn get_upload_handler(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     // Don't bother trying to decrypt if we know the file doesn't exist.
-    if !state.storage.upload_exists(&id).unwrap() {
+    if !state.storage.file_exists(&id).unwrap() {
         return DECRYPT_OR_NOT_FOUND_RESPONSE.into_response();
     }
 
-    match state.storage.get_upload(&id, &query.key) {
+    match state.storage.get_file(&id, &query.key) {
         Ok(bytes) => (
             [(
                 header::CONTENT_TYPE,

@@ -33,4 +33,4 @@ flameshot gui -r > $file; if [ ! -s $file ]; then
   exit 1;
 fi
 
-curl -H "Authorization: Bearer $DOLLHOUSE_TOKEN" $DOLLHOUSE_BASE_URL/api/upload -F file="@$file" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;
+curl -H "Authorization: Bearer $DOLLHOUSE_TOKEN" $DOLLHOUSE_BASE_URL/upload -F file="@$file" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;
