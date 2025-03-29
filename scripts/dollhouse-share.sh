@@ -32,5 +32,5 @@ if [ -z "$1" ]
 fi
 
 file=$(realpath $1)
-curl -H "Authorization: Bearer $DOLLHOUSE_TOKEN" $DOLLHOUSE_BASE_URL/api/upload -F file="@$file" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;
+curl -H "Authorization: Bearer $DOLLHOUSE_TOKEN" $DOLLHOUSE_BASE_URL/upload -F file="@$file" -H "Content-Type: multipart/form-data" | jq -r '.url' | wl-copy;
 echo "Upload URL has been copied to clipboard"

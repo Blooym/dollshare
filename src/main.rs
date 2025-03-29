@@ -1,3 +1,4 @@
+mod authentication;
 mod cryptography;
 mod middleware;
 mod mime;
@@ -5,6 +6,7 @@ mod routes;
 mod storage;
 
 use anyhow::{Context, Result};
+use authentication::Authentication;
 use axum::{
     Router,
     extract::DefaultBodyLimit,
@@ -20,7 +22,7 @@ use dotenvy::dotenv;
 use duration_human::{DurationHuman, DurationHumanValidator};
 use mime_guess::{Mime, mime::IMAGE_STAR};
 use std::{net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
-use storage::StorageHandler;
+use storage::Storage;
 use tokio::{net::TcpListener, signal};
 use tower_http::{
     catch_panic::CatchPanicLayer,
@@ -110,14 +112,16 @@ struct Arguments {
 
 #[derive(Debug, Clone)]
 struct AppState {
-    storage: Arc<StorageHandler>,
+    storage: Arc<Storage>,
+    auth: Arc<Authentication>,
+
     /// Base URL for use when returning public facing links.
     public_base_url: Url,
+
     /// File mimetypes that are allowed to be uploaded.
     /// Supports type wildcards (e.g. 'image/*', '*/*').
     upload_allowed_mimetypes: Vec<Mime>,
-    /// Collection of bearer tokens for actions that require authentication.
-    auth_tokens: Vec<String>,
+
     /// Used for all hash operations to avoid rainbow tables.
     persisted_salt: String,
 }
@@ -131,8 +135,8 @@ async fn main() -> Result<()> {
     let args = Arguments::parse();
 
     // Init required state.
-    let storage = Arc::new(StorageHandler::new(
-        &args.data_path.join(UPLOADS_DIRNAME),
+    let storage = Arc::new(Storage::new(
+        args.data_path.join(UPLOADS_DIRNAME),
         Duration::from(&args.upload_expiry_time),
     )?);
     let persisted_salt = {
@@ -150,8 +154,14 @@ async fn main() -> Result<()> {
         .route("/index.js", get(routes::index_js_handler))
         .route("/favicon.png", get(routes::favicon_handler))
         .route("/health", get(routes::health_handler))
+        .route("/statistics", get(routes::statistics_handler))
+        .route("/upload/{id}", get(routes::uploads::get_upload_handler))
         .route(
-            "/api/upload",
+            "/upload/{id}",
+            delete(routes::uploads::delete_image_handler),
+        )
+        .route(
+            "/upload",
             post(
                 routes::uploads::create_upload_handler.layer(DefaultBodyLimit::max(
                     args.upload_size_limit
@@ -161,11 +171,6 @@ async fn main() -> Result<()> {
                 )),
             ),
         )
-        .route(
-            "/api/upload/{id}",
-            delete(routes::uploads::delete_image_handler),
-        )
-        .route("/uploads/{id}", get(routes::uploads::get_upload_handler))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
@@ -176,10 +181,10 @@ async fn main() -> Result<()> {
         .layer(axum_middleware::from_fn(middleware::header_middleware))
         .with_state(AppState {
             storage: Arc::clone(&storage),
+            auth: Arc::new(Authentication::new(args.tokens)),
             public_base_url: args.public_url.clone(),
             upload_allowed_mimetypes: args.upload_mimetypes,
-            auth_tokens: args.tokens,
-            persisted_salt: persisted_salt,
+            persisted_salt,
         });
 
     // File expiry background task.
@@ -187,7 +192,7 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         loop {
             debug!("Running check to find expired files");
-            storage_clone.remove_expired_files().unwrap();
+            storage_clone.remove_all_expired_files().unwrap();
             tokio::time::sleep(Duration::from(&args.upload_expiry_interval)).await;
         }
     });

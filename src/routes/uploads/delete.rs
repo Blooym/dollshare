@@ -1,4 +1,4 @@
-use crate::{AppState, routes::authentication_valid};
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -13,14 +13,14 @@ pub async fn delete_image_handler(
     Path(id): Path<String>,
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
 ) -> StatusCode {
-    if !authentication_valid(authorization.token(), &state.auth_tokens) {
+    if !state.auth.state_for_token(authorization.token()).is_valid() {
         return StatusCode::UNAUTHORIZED;
     }
 
-    if !state.storage.upload_exists(&id).unwrap() {
+    if !state.storage.file_exists(&id).unwrap() {
         return StatusCode::NOT_FOUND;
     }
 
-    state.storage.delete_upload(&id).unwrap();
+    state.storage.delete_file(&id).unwrap();
     StatusCode::OK
 }
