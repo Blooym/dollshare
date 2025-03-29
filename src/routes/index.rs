@@ -11,7 +11,7 @@ pub async fn index_handler() -> Html<&'static str> {
 pub async fn favicon_handler() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "image/x-icon")],
-        (include_bytes!("../static/favicon.png")),
+        (include_bytes!("../static/favicon.ico")),
     )
 }
 
