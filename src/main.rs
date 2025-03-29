@@ -97,7 +97,9 @@ struct Arguments {
     /// File mimetypes that are allowed to be uploaded.
     /// Supports type wildcards (e.g. 'image/*', '*/*').
     ///
-    /// MIME types are determined by the magic numbers of uploaded content, if the mimetype cannot be determined the file will be rejected.
+    /// MIME types are determined by the magic numbers of uploaded content, if the mimetype cannot be determined the server will either:
+    ///     - Fallback to `application/octet-stream` with a `.unknown` extension if all mimetypes are allowed (using `*/*`).
+    ///     - Reject the upload with an error informing the uploader the mime type could not be determined.
     #[clap(
         long = "upload-mimetypes",
         env = "DOLLHOUSE_UPLOAD_MIMETYPES",
