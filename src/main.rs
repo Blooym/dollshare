@@ -154,7 +154,7 @@ async fn main() -> Result<()> {
         .route("/", get(routes::index_handler))
         .route("/index.css", get(routes::index_css_handler))
         .route("/index.js", get(routes::index_js_handler))
-        .route("/favicon.png", get(routes::favicon_handler))
+        .route("/favicon.ico", get(routes::favicon_handler))
         .route("/health", get(routes::health_handler))
         .route("/statistics", get(routes::statistics_handler))
         .route("/upload/{id}", get(routes::uploads::get_upload_handler))
