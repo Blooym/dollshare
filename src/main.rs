@@ -31,7 +31,6 @@ use tower_http::{
 };
 use tracing::{Level, debug, info};
 use tracing_subscriber::EnvFilter;
-use url::Url;
 
 const UPLOADS_DIRNAME: &str = "uploads";
 const PERSISTED_SALT_FILENAME: &str = "persisted_salt";
@@ -47,15 +46,12 @@ struct Arguments {
     )]
     address: SocketAddr,
 
-    /// The base url to use when generating links to uploads.
+    /// Return all URLs to clients using the `https` scheme. This does not make the internal serve use HTTPs.
     ///
-    /// This is only for link generation, you'll need to handle the reverse proxy yourself.
-    #[arg(
-        long = "public-url",
-        env = "DOLLHOUSE_PUBLIC_URL",
-        default_value = "http://127.0.0.1:8731"
-    )]
-    public_url: Url,
+    /// This requires you to run a reverse proxy infront of the server as the request URL hostname will be
+    /// used when returning URLs to clients.            
+    #[arg(long = "return-https", env = "DOLLHOUSE_RETURN_HTTPS")]
+    return_https: bool,
 
     /// One or more bearer tokens to use when interacting with authenticated endpoints.
     #[clap(
@@ -117,12 +113,12 @@ struct AppState {
     storage: Arc<Storage>,
     auth: Arc<Authentication>,
 
-    /// Base URL for use when returning public facing links.
-    public_base_url: Url,
-
     /// File mimetypes that are allowed to be uploaded.
     /// Supports type wildcards (e.g. 'image/*', '*/*').
     upload_allowed_mimetypes: Vec<Mime>,
+
+    /// Return all URLs to clients using the `https` scheme.
+    return_https: bool,
 
     /// Used for all hash operations to avoid rainbow tables.
     persisted_salt: String,
@@ -184,8 +180,8 @@ async fn main() -> Result<()> {
         .with_state(AppState {
             storage: Arc::clone(&storage),
             auth: Arc::new(Authentication::new(args.tokens)),
-            public_base_url: args.public_url.clone(),
             upload_allowed_mimetypes: args.upload_mimetypes,
+            return_https: args.return_https,
             persisted_salt,
         });
 
@@ -201,8 +197,8 @@ async fn main() -> Result<()> {
 
     let tcp_listener = TcpListener::bind(args.address).await?;
     info!(
-        "Internal server listening on http://{} and exposed as {}",
-        args.address, args.public_url
+        "Internal server started:\n - Address: http://{}\n - Return with HTTPs: {}",
+        args.address, args.return_https
     );
     axum::serve(tcp_listener, router)
         .with_graceful_shutdown(shutdown_signal())
