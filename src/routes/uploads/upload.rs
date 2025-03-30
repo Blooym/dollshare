@@ -6,7 +6,6 @@ use axum::{
 };
 use axum_extra::{
     TypedHeader,
-    extract::Host,
     headers::{Authorization, authorization::Bearer},
 };
 use mime_guess::{
@@ -31,7 +30,6 @@ pub struct CreateUploadResponse {
 
 pub async fn create_upload_handler(
     State(state): State<AppState>,
-    Host(host): Host,
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
 ) -> Result<Json<CreateUploadResponse>, (StatusCode, &'static str)> {
@@ -102,11 +100,11 @@ pub async fn create_upload_handler(
             mimetype: infer_ext,
             url: format!(
                 "{}://{}/upload/{}?key={}",
-                match state.return_https {
-                    true => "https",
-                    false => "http",
-                },
-                host,
+                state.public_base_url.scheme(),
+                state.public_base_url.port().map_or(
+                    state.public_base_url.host_str().unwrap().to_string(),
+                    |f| format!("{}:{}", state.public_base_url.host_str().unwrap(), f,)
+                ),
                 filename,
                 decryption_key
             ),
