@@ -15,10 +15,10 @@ A safe & encrypted place to share files. 🎀
 
 - **Storage-efficient**: All uploads are deduplicated by writing them to disk as `<hash>.<ext>`. Hashes are salted with a persistent key generated on first-time startup.
 
-- **Encrypted at rest**: All uploads are encrypted by the server during upload and the decryption key is sent to the uploader and is not stored by the server, No upload can be accessed without the deceyption key, even with access to the filesystem.
-  - Note: as encyption and decryption is handled server-side a malicious actor with access to the server could intercept data unencrypted or log decryption keys. This is a considered flaw thar allows embedding uploads on any website.
+- **Encrypted at rest**: All uploads are encrypted by the server during upload. The decryption key is only sent to the uploader and is not stored on the server. No upload can be accessed without the decryption key, even with access to the filesystem.
+  - Note: as encyption and decryption is handled server-side a malicious actor with access to the server could intercept data unencrypted or read decryption keys. This is an intentional flaw to allow uploads to embed on any website.
 
-- **Configurable and simple**: Running the server should be as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
+- **Configurable and simple**: Running the server should is as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
 
 ## Setup
 
