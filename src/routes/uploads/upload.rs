@@ -4,10 +4,6 @@ use axum::{
     extract::{Multipart, State},
     http::StatusCode,
 };
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use mime_guess::{
     Mime,
     mime::{APPLICATION_OCTET_STREAM, STAR_STAR},
@@ -30,13 +26,8 @@ pub struct CreateUploadResponse {
 
 pub async fn create_upload_handler(
     State(state): State<AppState>,
-    TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     mut multipart: Multipart,
 ) -> Result<Json<CreateUploadResponse>, (StatusCode, &'static str)> {
-    if !state.auth.state_for_token(authorization.token()).is_valid() {
-        return Err((StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.as_str()));
-    }
-
     // Get data from first multipart upload.
     let field = match multipart.next_field().await {
         Ok(field) => {
@@ -95,7 +86,7 @@ pub async fn create_upload_handler(
         infer_ext
     );
 
-    match state.storage.save_file(&filename, &data) {
+    match state.storage_provider.save_file(&filename, &data) {
         Ok(decryption_key) => Ok(Json(CreateUploadResponse {
             mimetype: infer_ext,
             url: format!(
