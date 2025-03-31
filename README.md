@@ -5,19 +5,20 @@
 > [!CAUTION]  
 > **This project is made for me, my needs, and my infrastructure.**
 >
-> No support will be offered for this software, and breaking changes to functionalty or features may be made any time.
+> No support will be offered for this software. Breaking changes to functionalty or features may be made any time.
 
 A safe & encrypted place to share files. 🎀
 
 ## Features
 
-- **Ephemeral-first**: Files are treated as temporary and will be automatically deleted based on a configurable time since last access.
+- **Ephemeral-first**: All uploads are treated as temporary and will be automatically deleted based on time since last access.
 
-- **Storage-efficient**: Files are deduplicated by writing them to disk as `<hash>.<ext>` which helps to minimise storage usage. Hashes are salted with a value generated at first startup which is then stored on disk.
+- **Storage-efficient**: All uploads are deduplicated by writing them to disk as `<hash>.<ext>`. Hashes are salted with a persistent key generated on first-time startup.
 
-- **Encrypted at rest**: Files are encrypted on-server during upload and a key is attached to the URL sent back to the uploader; No upload can be accessed without the given key, even with access to the backing filesystem. 
+- **Encrypted at rest**: All uploads are encrypted by the server during upload and the decryption key is sent to the uploader and is not stored by the server, No upload can be accessed without the deceyption key, even with access to the filesystem.
+  - Note: as encyption and decryption is handled server-side a malicious actor with access to the server could intercept data unencrypted or log decryption keys. This is a considered flaw thar allows embedding uploads on any website.
 
-- **Configurable and simple to host**: Running the server should be as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
+- **Configurable and simple**: Running the server should be as simple as pulling the docker container or building the binary, changing a few configuration options, and starting the server.
 
 ## Setup
 
