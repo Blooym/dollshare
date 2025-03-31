@@ -1,17 +1,15 @@
-mod authentication;
 mod cryptography;
-mod middleware;
 mod mime;
+mod providers;
 mod routes;
-mod storage;
 
 use anyhow::{Context, Result};
-use authentication::Authentication;
 use axum::{
     Router,
-    extract::DefaultBodyLimit,
+    extract::{DefaultBodyLimit, Request},
     handler::Handler,
-    middleware as axum_middleware,
+    http::{HeaderValue, header},
+    middleware::{self as axum_middleware, Next},
     routing::{delete, get, post},
 };
 use bytesize::ByteSize;
@@ -21,8 +19,9 @@ use cryptography::Cryptography;
 use dotenvy::dotenv;
 use duration_human::{DurationHuman, DurationHumanValidator};
 use mime_guess::{Mime, mime::IMAGE_STAR};
+use providers::auth::AuthProvider;
+use providers::storage::StorageProvider;
 use std::{net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
-use storage::Storage;
 use tokio::{net::TcpListener, signal};
 use tower_http::{
     catch_panic::CatchPanicLayer,
@@ -114,8 +113,8 @@ struct Arguments {
 
 #[derive(Debug, Clone)]
 struct AppState {
-    storage: Arc<Storage>,
-    auth: Arc<Authentication>,
+    storage_provider: Arc<StorageProvider>,
+    auth_provider: Arc<AuthProvider>,
 
     /// Base URL for use when returning public facing links.
     public_base_url: Url,
@@ -137,7 +136,7 @@ async fn main() -> Result<()> {
     let args = Arguments::parse();
 
     // Init required state.
-    let storage = Arc::new(Storage::new(
+    let storage = Arc::new(StorageProvider::new(
         args.data_path.join(UPLOADS_DIRNAME),
         Duration::from(&args.upload_expiry_time),
     )?);
@@ -149,6 +148,13 @@ async fn main() -> Result<()> {
             Cryptography::create_persisted_salt(&path)?
         }
     };
+    let state = AppState {
+        storage_provider: Arc::clone(&storage),
+        auth_provider: Arc::new(AuthProvider::new(args.tokens)),
+        public_base_url: args.public_url.clone(),
+        upload_allowed_mimetypes: args.upload_mimetypes,
+        persisted_salt,
+    };
 
     let router = Router::new()
         .route("/", get(routes::index_handler))
@@ -156,21 +162,37 @@ async fn main() -> Result<()> {
         .route("/index.js", get(routes::index_js_handler))
         .route("/favicon.ico", get(routes::favicon_handler))
         .route("/health", get(routes::health_handler))
-        .route("/statistics", get(routes::statistics_handler))
-        .route("/upload/{id}", get(routes::uploads::get_upload_handler))
         .route(
-            "/upload/{id}",
-            delete(routes::uploads::delete_image_handler),
+            "/statistics",
+            get(routes::statistics_handler).layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                AuthProvider::valid_auth_middleware,
+            )),
         )
+        .route("/upload/{id}", get(routes::uploads::get_upload_handler))
         .route(
             "/upload",
             post(
-                routes::uploads::create_upload_handler.layer(DefaultBodyLimit::max(
-                    args.upload_size_limit
-                        .0
-                        .try_into()
-                        .context("upload limit does not fit into usize")?,
-                )),
+                routes::uploads::create_upload_handler
+                    .layer(DefaultBodyLimit::max(
+                        args.upload_size_limit
+                            .0
+                            .try_into()
+                            .context("upload limit does not fit into usize")?,
+                    ))
+                    .layer(axum_middleware::from_fn_with_state(
+                        state.clone(),
+                        AuthProvider::valid_auth_middleware,
+                    )),
+            ),
+        )
+        .route(
+            "/upload/{id}",
+            delete(routes::uploads::delete_image_handler).layer(
+                axum_middleware::from_fn_with_state(
+                    state.clone(),
+                    AuthProvider::valid_auth_middleware,
+                ),
             ),
         )
         .layer(
@@ -180,14 +202,19 @@ async fn main() -> Result<()> {
         )
         .layer(NormalizePathLayer::trim_trailing_slash())
         .layer(CatchPanicLayer::new())
-        .layer(axum_middleware::from_fn(middleware::header_middleware))
-        .with_state(AppState {
-            storage: Arc::clone(&storage),
-            auth: Arc::new(Authentication::new(args.tokens)),
-            public_base_url: args.public_url.clone(),
-            upload_allowed_mimetypes: args.upload_mimetypes,
-            persisted_salt,
-        });
+        .layer(axum_middleware::from_fn(
+            async |req: Request, next: Next| {
+                let mut res = next.run(req).await;
+                let res_headers = res.headers_mut();
+                res_headers.insert(
+                    header::SERVER,
+                    HeaderValue::from_static(env!("CARGO_PKG_NAME")),
+                );
+                res_headers.insert("X-Robots-Tag", HeaderValue::from_static("none"));
+                res
+            },
+        ))
+        .with_state(state);
 
     // File expiry background task.
     let storage_clone = Arc::clone(&storage);
@@ -201,7 +228,7 @@ async fn main() -> Result<()> {
 
     let tcp_listener = TcpListener::bind(args.address).await?;
     info!(
-        "Internal server listening on http://{} and exposed as {}",
+        "\nInternal server started\n* Listening on: http://{}\n* Exposed as {}",
         args.address, args.public_url
     );
     axum::serve(tcp_listener, router)

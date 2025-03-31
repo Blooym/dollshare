@@ -8,12 +8,12 @@ use std::{
 use tracing::{debug, info};
 
 #[derive(Debug)]
-pub struct Storage {
+pub struct StorageProvider {
     base_path: PathBuf,
     expire_after: Duration,
 }
 
-impl Storage {
+impl StorageProvider {
     pub fn new(base_path: PathBuf, expire_after: Duration) -> Result<Self> {
         fs::create_dir_all(&base_path)?;
         Ok(Self {
