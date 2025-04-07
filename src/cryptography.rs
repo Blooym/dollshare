@@ -65,7 +65,7 @@ impl Cryptography {
         Ok(hasher.finalize().to_hex().to_string())
     }
 
-    /// Retrive a saved salt string from the given path.
+    /// Retrieve a saved salt string from the given path.
     pub fn get_persisted_salt(path: &PathBuf) -> Result<Option<String>> {
         // Check for existing salt.
         if fs::exists(path)? {
