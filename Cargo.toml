@@ -1,7 +1,7 @@
 [package]
 name = "dollhouse"
 description = "Create file share links and embed media on websites."
-repository = "https://github.com/Blooym/dollhouse"
+repository = "https://codeberg.org/Blooym/dollhouse"
 authors = ["Blooym"]
 version = "0.1.0"
 edition = "2024"

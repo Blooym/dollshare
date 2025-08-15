@@ -46,7 +46,7 @@ docker compose up -d
 2. Install the project binary
 
 ```
-cargo install --git https://github.com/Blooym/dollhouse.git
+cargo install --git https://codeberg.org/Blooym/dollhouse.git
 ```
 
 3. Set configuration values as necessary.
