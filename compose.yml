@@ -1,12 +1,12 @@
 services:
-  dollhouse:
-    container_name: dollhouse
+  dollshare:
+    container_name: dollshare
     build: .
     restart: unless-stopped
     ports:
       - 8731:8731
     volumes:
-      - dollhouse-data:/srv/dollhouse
+      - dollshare-data:/srv/dollshare
 
 volumes:
-  dollhouse-data:
+  dollshare-data:

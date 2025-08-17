@@ -1,7 +1,7 @@
 [package]
-name = "dollhouse"
+name = "dollshare"
 description = "Create file share links and embed media on websites."
-repository = "https://codeberg.org/Blooym/dollhouse"
+repository = "https://codeberg.org/Blooym/dollshare"
 authors = ["Blooym"]
 version = "0.1.0"
 edition = "2024"
@@ -20,12 +20,12 @@ storage-filesystem = ["dep:faccess"]
 storage-s3 = ["dep:aws-config", "dep:aws-sdk-s3"]
 
 [dependencies]
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 axum = { version = "0.8.4", features = ["http2", "multipart"] }
 axum-extra = { version = "0.10.1", features = ["typed-header"] }
 blake3 = { version = "1.8.2", features = ["zeroize", "rayon"] }
 bytesize = "2.0.1"
-clap = { version = "4.5.42", features = ["derive", "env", "string"] }
+clap = { version = "4.5.45", features = ["derive", "env", "string"] }
 chacha20poly1305 = "0.10.1"
 clap-duration = "0.1.11"
 dotenvy = "0.15.7"

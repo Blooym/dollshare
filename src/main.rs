@@ -38,7 +38,7 @@ struct Arguments {
     /// Internet socket address that the server should be ran on.
     #[arg(
         long = "address",
-        env = "DOLLHOUSE_ADDRESS",
+        env = "DOLLSHARE_ADDRESS",
         default_value = "127.0.0.1:8731"
     )]
     address: SocketAddr,
@@ -48,7 +48,7 @@ struct Arguments {
     /// This is only for link generation, you'll need to handle the reverse proxy yourself.
     #[arg(
         long = "public-urls",
-        env = "DOLLHOUSE_PUBLIC_URLS",
+        env = "DOLLSHARE_PUBLIC_URLS",
         default_value = "http://127.0.0.1:8731",
         value_delimiter = ','
     )]
@@ -57,7 +57,7 @@ struct Arguments {
     /// One or more bearer tokens to use when interacting with authenticated endpoints.
     #[clap(
         long = "tokens",
-        env = "DOLLHOUSE_TOKENS",
+        env = "DOLLSHARE_TOKENS",
         required = true,
         value_delimiter = ','
     )]
@@ -68,21 +68,21 @@ struct Arguments {
     /// Available options depend on what was enabled at compile time, a full list of providers is below.
     ///
     /// Providers: `memory://`, `fs://<path>`, `s3://bucket`
-    #[arg(long = "storage", env = "DOLLHOUSE_STORAGE_PROVIDER")]
+    #[arg(long = "storage", env = "DOLLSHARE_STORAGE_PROVIDER")]
     storage: StorageProvider,
 
     /// A unique secret to use for file hashing operations.
-    #[clap(long = "app-secret", env = "DOLLHOUSE_APP_SECRET")]
+    #[clap(long = "app-secret", env = "DOLLSHARE_APP_SECRET")]
     app_secret: String,
 
     /// Time since since last access before a file is automatically purged from storage.
-    #[clap(long = "upload-expiry", env = "DOLLHOUSE_UPLOAD_EXPIRY", value_parser = duration_range_value_parse!(min: 30min, max: 100years))]
+    #[clap(long = "upload-expiry", env = "DOLLSHARE_UPLOAD_EXPIRY", value_parser = duration_range_value_parse!(min: 30min, max: 100years))]
     upload_expiry: Option<DurationHuman>,
 
     /// Maximum file size that can be uploaded.
     #[clap(
         long = "upload-size-limit",
-        env = "DOLLHOUSE_UPLOAD_SIZE_LIMIT",
+        env = "DOLLSHARE_UPLOAD_SIZE_LIMIT",
         default_value = "50MB"
     )]
     upload_size_limit: ByteSize,
@@ -95,7 +95,7 @@ struct Arguments {
     ///     - Reject the upload with an error informing the uploader the mime type could not be determined.
     #[clap(
         long = "upload-mimetypes",
-        env = "DOLLHOUSE_UPLOAD_MIMETYPES",
+        env = "DOLLSHARE_UPLOAD_MIMETYPES",
         default_values_t = [
             IMAGE_STAR,
             Mime::from_str("video/*").unwrap()

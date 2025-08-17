@@ -2,7 +2,7 @@
 #   SETUP
 # ----------
 FROM alpine:latest AS setup
-RUN adduser -S -s /bin/false -D dollhouse
+RUN adduser -S -s /bin/false -D dollshare
 RUN mkdir /dir
 
 # -----------
@@ -29,20 +29,20 @@ RUN cargo build --release
 FROM scratch
 WORKDIR /opt
 
-COPY --from=build /build/target/release/dollhouse /usr/bin/dollhouse
+COPY --from=build /build/target/release/dollshare /usr/bin/dollshare
 
 # Setup deployment image.
 COPY --from=setup /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=setup /etc/passwd /etc/passwd
 COPY --from=setup /bin/false /bin/false
-USER dollhouse
-COPY --from=setup --chown=dollhouse /dir /srv/dollhouse
+USER dollshare
+COPY --from=setup --chown=dollshare /dir /srv/dollshare
 
 # Set configuration defaults for container builds.
-ENV DOLLHOUSE_ADDRESS=0.0.0.0:8731
-ENV DOLLHOUSE_PUBLIC_URL=http://0.0.0.0:8731
-ENV DOLLHOUSE_STORAGE_PROVIDER=fs:///srv/dollhouse
+ENV DOLLSHARE_ADDRESS=0.0.0.0:8731
+ENV DOLLSHARE_PUBLIC_URL=http://0.0.0.0:8731
+ENV DOLLSHARE_STORAGE_PROVIDER=fs:///srv/dollshare
 ENV RUST_LOG=info
 EXPOSE 8731
 
-ENTRYPOINT ["/usr/bin/dollhouse"]
+ENTRYPOINT ["/usr/bin/dollshare"]
