@@ -43,16 +43,15 @@ struct Arguments {
     )]
     address: SocketAddr,
 
-    /// Base url(s) to use when generating links to uploads.
+    /// Base url to use when generating links to uploads.
     ///
     /// This is only for link generation, you'll need to handle the reverse proxy yourself.
     #[arg(
-        long = "public-urls",
-        env = "DOLLSHARE_PUBLIC_URLS",
-        default_value = "http://127.0.0.1:8731",
-        value_delimiter = ','
+        long = "public-url",
+        env = "DOLLSHARE_PUBLIC_URL",
+        default_value = "http://127.0.0.1:8731"
     )]
-    public_url: Vec<Url>,
+    public_url: Url,
 
     /// One or more bearer tokens to use when interacting with authenticated endpoints.
     #[clap(
@@ -109,7 +108,7 @@ struct Arguments {
 struct AppState {
     storage: Arc<RwLock<AppStorage>>,
     auth_provider: Arc<AuthProvider>,
-    public_base_urls: Vec<Url>,
+    public_base_url: Url,
     upload_allowed_mimetypes: Vec<Mime>,
     persisted_salt: String,
 }
@@ -127,7 +126,7 @@ async fn main() -> Result<()> {
     let state = AppState {
         storage: Arc::clone(&storage),
         auth_provider: Arc::new(AuthProvider::new(args.tokens.clone())),
-        public_base_urls: args.public_url.clone(),
+        public_base_url: args.public_url.clone(),
         upload_allowed_mimetypes: args.upload_mimetypes.clone(),
         persisted_salt: args.app_secret,
     };
@@ -234,17 +233,13 @@ async fn main() -> Result<()> {
     info!(
         "Internal server started\n\
          * Listening on: http://{}\n\
-         * Public URLs: {}\n\
+         * Public URL: {}\n\
          * Upload size limit: {}\n\
          * Upload expiry: {}\n\
          * Allowed mimetypes: {:?}\n\
          * Tokens configured: {}",
         args.address,
-        args.public_url
-            .iter()
-            .map(|url| url.as_str())
-            .collect::<Vec<_>>()
-            .join(", "),
+        args.public_url.as_str(),
         args.upload_size_limit.display().si(),
         using_upload_expiry.map_or_else(|| "disabled".to_string(), |v| format!("{v:#}")),
         args.upload_mimetypes,

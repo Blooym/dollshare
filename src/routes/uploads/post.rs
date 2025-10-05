@@ -10,7 +10,6 @@ use mime_guess::{
     Mime,
     mime::{APPLICATION_OCTET_STREAM, STAR_STAR},
 };
-use rand::seq::IndexedRandom;
 use serde::Serialize;
 use std::{
     io::{BufReader, BufWriter, Cursor, Write},
@@ -186,12 +185,6 @@ pub async fn create_upload_handler(
         infer_ext
     );
 
-    // Generate a random base URL from the list of public base URLs.
-    let res_url_base = state.public_base_urls.choose(&mut rand::rng()).ok_or((
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "No public base URL configured.",
-    ))?;
-
     match state
         .storage
         .write()
@@ -205,10 +198,10 @@ pub async fn create_upload_handler(
                 mimetype: infer_str,
                 url: format!(
                     "{}://{}/upload/{}?key={}",
-                    res_url_base.scheme(),
-                    res_url_base.port().map_or(
-                        res_url_base.host_str().unwrap().to_string(),
-                        |f| format!("{}:{}", res_url_base.host_str().unwrap(), f,)
+                    state.public_base_url.scheme(),
+                    state.public_base_url.port().map_or(
+                        state.public_base_url.host_str().unwrap().to_string(),
+                        |f| format!("{}:{}", state.public_base_url.host_str().unwrap(), f,)
                     ),
                     filename,
                     decryption_key
