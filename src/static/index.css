@@ -1,116 +1,127 @@
 :root {
-    --col-background: #151515;
-    --col-background-layer: #292929;
-    --col-link: white;
-    --col-link-hover: lightgrey;
-    --col-text: white;
-    --col-input-background: #565b63;
-    --col-input-background-hover: #474e5a;
-    font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
+  --col-background: #151515;
+  --col-background-layer: #292929;
+  --col-link: white;
+  --col-link-hover: lightgrey;
+  --col-text: white;
+  --col-input-background: #565b63;
+  --col-input-background-hover: #474e5a;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, Segoe UI, Roboto;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
 }
 
 body {
-    height: 100%;
-    width: 100%;
-    background-color: var(--col-background);
-    color: var(--col-text);
-}
+  background-color: var(--col-background);
+  color: var(--col-text);
+  display: flex;
+  flex-direction: column;
 
-a {
+  a {
     color: var(--col-link);
-}
 
-a:hover {
-    color: var(--col-link-hover);
-}
+    &:hover {
+      color: var(--col-link-hover);
+    }
+  }
 
-nav {
+  nav {
     background-color: var(--col-background-layer);
     color: var(--col-text);
-}
 
-.nav-container {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    padding: 5px 10px;
-    align-items: center;
-    justify-content: space-between;
-}
+    .nav-container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      padding: 5px 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
 
-.container {
+  .container {
     display: flex;
     flex-direction: column;
+    flex: 1;
     width: 100%;
     max-width: 600px;
+    justify-content: center;
     align-items: center;
-    padding: 0 0.4rem;
-    margin: 1rem auto;
+    margin: 0 auto;
+    padding: 0 0.8rem;
+
+    .upload {
+      width: 100%;
+      border-radius: 8px;
+      background-color: var(--col-background-layer);
+      padding: 1rem;
+      text-align: center;
+
+      button {
+        margin-top: 1rem;
+        width: 200px;
+        height: 50px;
+      }
+
+      label {
+        font-weight: bold;
+      }
+
+      .field {
+        margin: 1rem;
+
+        input {
+          width: 100%;
+          max-width: 320px;
+        }
+
+        #fileInput {
+          padding: 10px;
+          cursor: pointer;
+          background-color: var(--col-input-background);
+          border-radius: 8px;
+
+          &:hover {
+            background-color: var(--col-input-background-hover);
+          }
+
+          .upload #error {
+            margin: 1rem;
+            color: red;
+          }
+        }
+      }
+    }
+  }
 }
 
-.upload {
-    width: 100%;
-    border-radius: 8px;
-    background-color: var(--col-background-layer);
-    padding: 1rem;
-    text-align: center;
-}
-
-.upload button {
-    margin-top: 1rem;
-    width: 200px;
-    height: 50px;
-}
-
-.upload label {
-    font-weight: bold;
-}
-
-.upload .field {
-    margin: 1rem;
-}
-
-.upload .field input {
-    width: 100%;
-    max-width: 320px;
-}
-
-.upload .field #fileInput {
-    padding: 10px;
-    cursor: pointer;
-    background-color: var(--col-input-background);
-    border-radius: 8px;
-}
-
-.upload .field #fileInput:hover {
-    background-color: var(--col-input-background-hover);
-}
-
-.upload #error {
-    margin: 1rem;
-    color: red;
-}
+/* CSS Reset */
 
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 * {
-    margin: 0;
+  margin: 0;
 }
 
 body {
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 input,
 button,
 textarea,
 select {
-    font: inherit;
+  font: inherit;
 }
 
 p,
@@ -120,11 +131,11 @@ h3,
 h4,
 h5,
 h6 {
-    overflow-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 p {
-    text-wrap: pretty;
+  text-wrap: pretty;
 }
 
 h1,
@@ -133,10 +144,10 @@ h3,
 h4,
 h5,
 h6 {
-    text-wrap: balance;
+  text-wrap: balance;
 }
 
 #root,
 #__next {
-    isolation: isolate;
+  isolation: isolate;
 }

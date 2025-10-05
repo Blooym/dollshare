@@ -1,5 +1,8 @@
 "use strict"
 
+const errorText = document.getElementById("error");
+const fileUploadForm = document.getElementById("fileUploadForm");
+
 function getTokenInput() {
     return document.getElementById("token");
 }
@@ -13,16 +16,14 @@ function setStoredToken() {
     localStorage.setItem("token", token);
 }
 
-const errorText = document.getElementById("error");
-const fileUploadForm = document.getElementById("fileUploadForm");
 
 let token = getStoredToken();
 if (token) {
     getTokenInput().value = token;
 }
-fileUploadForm.addEventListener("submit", uploadFile);
 
 // File upload handler.
+fileUploadForm.addEventListener("submit", uploadFile);
 async function uploadFile(event) {
     event.preventDefault();
     const fileInput = document.getElementById('fileInput');
